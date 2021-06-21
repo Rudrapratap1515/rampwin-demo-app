@@ -9,8 +9,9 @@ class NewMsgTemplateModal extends React.Component {
         super()
         this.state = {
             mergeFields: ['phone_number','full_name','first_name','last_name','company','email','address','city','state','zipcode','remarks','Expiry Date'],
-            selectedMergeFields: [],
-            templateMsgField: ['templateMsg']
+            currentTextAreaTag: 'selectedMergeFields0',
+            selectedMergeFieldsArray: [],
+            templateMsgField: ['selectedMergeFields0'],
         }
         this.handleInputChange = this.handleInputChange.bind(this);
         this.clearInputFields = this.clearInputFields.bind(this);
@@ -24,12 +25,17 @@ class NewMsgTemplateModal extends React.Component {
 
     clearInputFields(){
         this.setState(prevState => {
-            if(prevState.selectedMergeFields.length && prevState.templateName != ''){
-                let newState = prevState;
-                newState.selectedMergeFields = [];
-                newState.templateName = '';
-                return newState;
-            }            
+            let newState = prevState;
+            newState.templateName = '';
+            Object.keys(prevState).map((item,key) => {
+                if(/\d+$/.test(item) == true){
+                    if(prevState[item].length){
+                        newState[item] = '';                        
+                        newState.templateMsgField.length > 1 && newState.templateMsgField.pop();
+                    }
+                }
+            })
+            return newState;
         })
     }
 
@@ -52,7 +58,13 @@ class NewMsgTemplateModal extends React.Component {
                             <h2>Create Messege Template</h2>
                             <a 
                                 className={this.props.classes.crossbtn}
-                                onClick={e => {this.props.handleClose();this.clearInputFields()}}
+                                onClick={e => 
+                                    {
+                                        this.setState({currentTextAreaTag: 'selectedMergeFields0'})
+                                        this.props.handleClose();
+                                        this.clearInputFields()
+                                    }
+                                }
                             >
                                 x
                             </a>
@@ -64,7 +76,7 @@ class NewMsgTemplateModal extends React.Component {
                                         placeholder="Template Name"
                                         className={this.props.classes.templateName}
                                         value={this.state.templateName}
-                                        onChange={this.handleInputChange} 
+                                        onChange={this.handleInputChange}
                                     />
                                 </label>
                                 <h4>Insert Merge Field</h4>
@@ -73,11 +85,9 @@ class NewMsgTemplateModal extends React.Component {
                                         <div 
                                             onClick={
                                                 e => {
-                                                    this.setState(prevState => {
-                                                        let newState = prevState;
-                                                        newState.selectedMergeFields.splice(0,0,item);
-                                                        return newState;
-                                                    })                                    
+                                                    this.setState(prevState => 
+                                                        ({ [this.state.currentTextAreaTag]: prevState[this.state.currentTextAreaTag] + '[' + item + ']'})
+                                                    )
                                                 }
                                             } 
                                             className={this.props.classes.mergeFields}
@@ -87,41 +97,60 @@ class NewMsgTemplateModal extends React.Component {
                                     ))
                                 }
                                 {
-                                    this.state.templateMsgField.map((item,key) => (
-                                        <label>
+                                    this.state.templateMsgField.map((item,key) => (                                        
+                                        <div className={this.props.classes.mergeFieldsBox}>
                                             <textarea
                                                 name={item}
                                                 className={this.props.classes.templateMsg}
-                                                value={this.state.selectedMergeFields}
+                                                value={this.state[item]}
                                                 onChange={this.handleInputChange}
                                                 rows={6}
                                                 cols={6}
                                             />
-                                            <input type="file" className='add-file' name='Upload'/>
-                                            <a 
-                                                onClick={e => {
-                                                    this.setState(prevState => {
-                                                        let newState = prevState;
-                                                        newState.templateMsgField.push('templateMsg' + (key + 1));
-                                                        return newState;
-                                                    })
-                                                }}
-                                                className={this.props.classes.addBtn}
-                                            >
-                                                +
-                                            </a>
-                                        </label>
-                                        
+                                            <div className={this.props.classes.fileAddBox}>
+                                                <input 
+                                                    type="file" 
+                                                    className='add-file' 
+                                                    onChange={e => {
+                                                        this.setState(prevState => {
+                                                            let newState = prevState;
+                                                            newState['file' + key] = URL.createObjectURL(e.target.files[0]);
+                                                            return newState;
+                                                        })
+                                                    }}
+                                                />
+                                                {
+                                                    this.state['file' + key] && 
+                                                    <img className={this.props.classes.thumbnail} src={this.state['file' + key]} alt="Image preview..."/>
+                                                }                                            
+                                                {
+                                                    this.state.templateMsgField.length == (key + 1) &&
+                                                    <a 
+                                                        onClick={e => {
+                                                            this.setState({
+                                                                templateMsgField: [...this.state.templateMsgField, 'selectedMergeFields' + (key + 1)],
+                                                                currentTextAreaTag: 'selectedMergeFields' + (key + 1)
+                                                            })
+                                                        }}
+                                                        className={this.props.classes.addBtn}
+                                                    >
+                                                        +
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>                                        
                                     ))
                                 }
                                 <Button 
                                     variant="contained" 
                                     color="primary" 
                                     onClick={e => {
-                                        this.props.submitMessegeTemplate(this.state);
-                                        this.props.handleClose();
-                                        this.clearInputFields()
-                                    
+                                        if(this.state.templateName){
+                                            this.setState({currentTextAreaTag: 'selectedMergeFields0'})
+                                            this.props.submitMessegeTemplate(this.state);
+                                            this.props.handleClose();
+                                            this.clearInputFields();
+                                        }                                    
                                     }}
                                 >
                                     Create
@@ -135,4 +164,4 @@ class NewMsgTemplateModal extends React.Component {
     }
 }
 
-export default NewMsgTemplateModal
+export default NewMsgTemplateModal;

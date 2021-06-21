@@ -3,6 +3,7 @@ import Button from '@material-ui/core/Button';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/styles';
 import NewMsgTemplateModal from './NewMsgTemplateModal';
+import MobileViewModal from './MobileViewModal';
 
 const styles = theme => ({
     modal: {
@@ -35,7 +36,8 @@ const styles = theme => ({
         top: 0,
         color: 'black',
         padding: '10px',
-        fontSize: '20px'
+        fontSize: '20px',
+        cursor: 'pointer'
     },
     templateName:{
         width: '100%',
@@ -43,25 +45,47 @@ const styles = theme => ({
         border: 0
     },
     templateMsg:{
-        width: '60%',
+        width: '53%',
         display: 'block',
         border: '1px solid blue',
         borderRadius: 4,
         display: 'inline-block',
+        resize: 'none'
+    },
+    mergeFieldsBox:{
+        position: 'relative',
     },
     mergeFields: {
-        padding: '10px',
+        padding: '7px',
         borderRadius: 5,
         backgroundColor: 'rgb(255, 105, 135)',
         color: 'black',
+        fontSize: 'small',
         margin: '0 10px 10px 0',
-        display: 'inline-block'
+        display: 'inline-block',
+        cursor: 'pointer'
+    },
+    fileAddBox:{
+        position: 'absolute',
+        top: 0,
+        right: 0,
     },
     addBtn: {
-        backgroundColor: 'blue',
-        borderRadius: '100%',
-        color: 'white',
-        padding: '10px 12px'
+        color: '#3f51b5',
+        fontWeight: '800',
+        cursor: 'pointer',
+        position: 'absolute',
+        top: 0,
+        right: '-15px'
+    },
+    thumbnail:{
+        width:'50px',
+        height:'50px'
+    },
+    mobileImage:{
+        position: 'absolute',
+        right: 20,
+        cursor: 'pointer'
     }
 });
 
@@ -70,19 +94,42 @@ class Main extends React.Component {
         super()
         this.state = {
             open: false,
-            messegeTemplate: []
+            messegeTemplate: [],
+            selectedMergeFieldsArray: [],
+            messegeToShow: [],
+            openMobileModal: false
         }
         this.handleOpen = this.handleOpen.bind(this);
         this.handleClose = this.handleClose.bind(this);
+        this.handleOpenMobileModal = this.handleOpenMobileModal.bind(this);
+        this.handleCloseMobileModal = this.handleCloseMobileModal.bind(this);
         this.submitMessegeTemplate = this.submitMessegeTemplate.bind(this);
     }
 
     submitMessegeTemplate = (data) => {
-        this.setState(prevState => {
-            let newState = prevState;
-            newState.messegeTemplate.push(data.templateName);
-            return newState;
-        })
+        if(Object.keys(data).includes('selectedMergeFields0')){
+            let tempSelectedMergeFieldsArray = [];
+            Object.keys(data).map((item,key) => {
+                if(item.includes('selectedMergeFields')){
+                    tempSelectedMergeFieldsArray.push(data[item]);
+                }            
+            })
+            tempSelectedMergeFieldsArray.shift();
+            let tempMessegeTemplateDataObj = {};
+            tempMessegeTemplateDataObj.templateName = data.templateName;
+            tempMessegeTemplateDataObj.selectedMergeFieldsArray = [];
+            tempMessegeTemplateDataObj.selectedMergeFieldsArray.push(tempSelectedMergeFieldsArray);
+            this.setState({
+                messegeTemplate: [...this.state.messegeTemplate,tempMessegeTemplateDataObj]
+            })
+        } else {
+            this.setState({
+                messegeTemplate: [...this.state.messegeTemplate, {
+                    templateName: data.templateName,
+                    selectedMergeFieldsArray: data.selectedMergeFields
+                }]
+            })
+        }
     }
     
     handleOpen = () => {
@@ -92,6 +139,20 @@ class Main extends React.Component {
     handleClose = () => {
         this.setState({open: false})
     };
+
+    handleOpenMobileModal = (messeges) => {
+        this.setState(
+            {
+                openMobileModal: true,
+                messegeToShow: [...messeges]
+            }
+        )
+    };
+
+    handleCloseMobileModal = () => {
+        this.setState({openMobileModal: false})
+    };
+    
 
     render(){
         const { classes } = this.props;
@@ -108,20 +169,19 @@ class Main extends React.Component {
                                     <div className="card-row__column card-row__column--info">
                                         <h3 className="card-row__name card-row__name--bold">Template Name</h3>
                                     </div>
-                                    <div className="card-row__column">
-                                        <a className="card-row__link" href="#">Action</a>
-                                    </div>
                                 </div>
                                 {
                                     this.state.messegeTemplate.length ?
-                                    this.state.messegeTemplate.map(item => (
+                                    this.state.messegeTemplate.map((item,key) => (
                                         <div className="card-row__item">
                                             <div className="card-row__column card-row__column--info">
-                                                <h3 className="card-row__name card-row__name--bold">{item}</h3>
+                                                <h3 className="card-row__name card-row__name--bold">{item.templateName}</h3>
                                             </div>
-                                            <div className="card-row__column">
-                                                <a className="card-row__link" href="#">Learn More</a>
-                                            </div>
+                                            <img 
+                                                className={classes.mobileImage} 
+                                                onClick={e => {this.handleOpenMobileModal(item.selectedMergeFieldsArray)}} 
+                                                src="https://img.icons8.com/material/24/000000/android--v1.png"
+                                            />
                                         </div>
                                     ))
                                     :
@@ -134,7 +194,13 @@ class Main extends React.Component {
                             </div>
                         </div>
                     </section>
-                </div>
+                </div> 
+                <MobileViewModal
+                    classes={classes}
+                    open={this.state.openMobileModal}
+                    handleClose={this.handleCloseMobileModal}
+                    messegeToShow={this.state.messegeToShow}
+                />               
                 <NewMsgTemplateModal 
                     classes={classes} 
                     open={this.state.open}
